@@ -5,6 +5,9 @@ import errno
 import stat
 import time
 from kafka import KafkaProducer
+import sqlparse as sp
+
+from query_parser import parse_queries
 
 class LogWatcher(object):
     """Looks for changes in all files of a directory.
@@ -12,7 +15,7 @@ class LogWatcher(object):
     It also supports files rotation.
     """
 
-    def __init__(self, folder, callback, extensions=["log"], tail_lines=0,retention_period = 86400):
+    def __init__(self, folder, callback, extensions=["log"], tail_lines=0,retention_period = 7200):
         """Arguments:
 
         (str) @folder:
@@ -199,8 +202,10 @@ class LogWatcher(object):
         self.files_map.clear()
 
 
+
+
 if __name__ == '__main__':
-    producer = KafkaProducer(bootstrap_servers='localhost:9092')
+    # producer = KafkaProducer(bootstrap_servers='localhost:9092')
 
 
     def callback(filename, lines):
@@ -217,14 +222,18 @@ if __name__ == '__main__':
             querylist.append(" ".join(str.split()))
             
             for i in querylist:
-                if "statement: " in i and "statement: SELECT" not in i:
-                    producer.send('stream-input',i.encode(encoding="UTF-8",errors="ignore")) 
-
+                print(i)
+                # if "statement: " in i:
+                #     queries = i.split("statement: ")[1]
+                #     parser = parse_queries(queries)
+                #     hook_message = parser.get_final_message()
+                #     print(hook_message)
+                        # producer.send('stream-input',i.encode(encoding="UTF-8",errors="ignore")) 
         except Exception as e:
             print(time.time(), 'caught exception ',e,' rendering a new log line in %s' % filename)
 
-    #l = LogWatcher("/Library/PostgreSQL/13/pg_log", callback)
-    l = LogWatcher("log_files", callback)
+    l = LogWatcher("/Library/PostgreSQL/13/pg_log", callback)
+    #l = LogWatcher("log_files", callback)
     l.loop()
 
     
